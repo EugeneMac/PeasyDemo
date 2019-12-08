@@ -4,15 +4,33 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Peasy;
 
 namespace PeasyDemo.Tests
 {
+    
     [TestFixture]
-    public class InsertPersonTests
+    public class InsertPersonRuleTests
     {
+        public static PersonMockDataProxy dataProxy = new PersonMockDataProxy();
+        PersonService service = new PersonService(dataProxy);
+
         [Test]
-        public void TestInsertPersonWithIllegalCharacters()
+        public void InsertPersonWithIllegalCharactersName()
         {
+            var newPerson = new Person() { firstName = "John*", lastName = "Jameson" };
+            var insertResult = service.InsertCommand(newPerson).Execute();
+
+            Assert.AreEqual("Names should contain only letters!", insertResult.Errors.First().ToString());
+        }
+
+        [Test]
+        public void InsertPersonWithTheSameSSN()
+        {
+            var rule = new PersonSSNRule("1234-567-890", dataProxy);
+
+            Assert.AreEqual(false, rule.Validate().IsValid);
+            Assert.AreEqual("SSN of a new person should be unique! A person with this SSN is already in the database!", rule.Validate().ErrorMessage);
         }
     }
 }

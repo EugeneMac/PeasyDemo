@@ -104,7 +104,7 @@ namespace PeasyDemo
 
         protected override void OnValidate()
         {
-            if (!Regex.IsMatch(_firstName,@"\w+") || !Regex.IsMatch(_lastName, @"\w+"))
+            if (!Regex.IsMatch(_firstName, @"^[a-zA-Z]*$") || !Regex.IsMatch(_lastName, @"^[a-zA-Z]*$"))
             {
                 Invalidate("Names should contain only letters!");
             }
