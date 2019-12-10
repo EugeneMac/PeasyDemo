@@ -25,12 +25,23 @@ namespace PeasyDemo.Tests
         }
 
         [Test]
+        public void InsertPerson()
+        {
+            var newPerson = new Person() { firstName = "John", lastName = "Jameson" };
+            var insertResult = service.InsertCommand(newPerson).Execute();
+
+            Assert.AreEqual(true, insertResult.Success);
+        }
+
+        [Test]
         public void InsertPersonWithTheSameSSN()
         {
             var rule = new PersonSSNRule("1234-567-890", dataProxy);
 
             Assert.AreEqual(false, rule.Validate().IsValid);
-            Assert.AreEqual("SSN of a new person should be unique! A person with this SSN is already in the database!", rule.Validate().ErrorMessage);
+            Assert.AreEqual("SSN of a new person should be unique! A person with this SSN is already in the database!",
+                            rule.Validate().ErrorMessage,
+                            "A validation of rule PersonSSNRule should fail because of using already existing SSN! But it was valid!");
         }
     }
 }

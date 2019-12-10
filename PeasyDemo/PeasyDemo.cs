@@ -23,6 +23,16 @@ namespace PeasyDemo
 
     public class PersonMockDataProxy : IDataProxy<Person, int>
     {
+        public IEnumerable<Person> employees = new List<Person> 
+        {
+            new Person{ID=1, firstName="John", lastName="Doe", birthDate = new DateTime(1985,10,12), SSN = "1111-222-333", City="Washington", Department="IT", Position="CTO", Salary=150000},
+            new Person{ID=2, firstName="Mary", lastName="Smith", birthDate = new DateTime(1987,06,10), SSN = "1234-567-890", City="New York", Department="IT", Position="Senior Developer", Salary=100000},
+            new Person{ID=3, firstName="Alex", lastName="Black", birthDate = new DateTime(1988,1,2), SSN = "1010-112-113", City="Washington", Department="IT", Position="System Administrator", Salary=80000}
+        };
+        public PersonMockDataProxy()
+        {
+
+        }
         public void Delete(int id)
         {
             throw new NotImplementedException();
@@ -35,12 +45,7 @@ namespace PeasyDemo
 
         public IEnumerable<Person> GetAll()
         {
-            return new[]
-            {
-                new Person{ID=1, firstName="John", lastName="Doe", birthDate = new DateTime(1985,10,12), SSN = "1111-222-333", City="Washington", Department="IT", Position="CTO", Salary=150000},
-                new Person{ID=2, firstName="Mary", lastName="Smith", birthDate = new DateTime(1987,06,10), SSN = "1234-567-890", City="New York", Department="IT", Position="Senior Developer", Salary=100000},
-                new Person{ID=3, firstName="Alex", lastName="Black", birthDate = new DateTime(1988,1,2), SSN = "1010-112-113", City="Washington", Department="IT", Position="System Administrator", Salary=80000}
-            };
+            return employees;
         }
 
         public Task<IEnumerable<Person>> GetAllAsync()
@@ -81,13 +86,16 @@ namespace PeasyDemo
 
     public class PersonService : ServiceBase<Person, int>
     {
+        private IDataProxy<Person, int> _pmdp;
         public PersonService(IDataProxy<Person, int> dataProxy) : base(dataProxy)
         {
+            _pmdp = dataProxy;
         }
 
         protected override IEnumerable<IRule> GetBusinessRulesForInsert(Person person, ExecutionContext<Person> context)
         {
             yield return new PersonNameRule(person.firstName, person.lastName);
+            yield return new PersonSSNRule(person.SSN, _pmdp);
         }
     }
 
@@ -114,9 +122,9 @@ namespace PeasyDemo
     public class PersonSSNRule : RuleBase
     {
         private string _ssn;
-        private PersonMockDataProxy _dp;
-
-        public PersonSSNRule(string ssn, PersonMockDataProxy dp)
+        private IDataProxy<Person, int> _dp;
+        
+        public PersonSSNRule(string ssn, IDataProxy<Person, int> dp)
         {
             _ssn = ssn;
             _dp = dp;
@@ -124,7 +132,8 @@ namespace PeasyDemo
 
         protected override void OnValidate()
         {
-            if ((from person in _dp.GetAll() where person.SSN == _ssn select person)!=null)
+            var result = (from person in _dp.GetAll() where person.SSN == _ssn select person).Count<Person>();
+            if (result!=0)
             {
                 Invalidate("SSN of a new person should be unique! A person with this SSN is already in the database!");
             }
